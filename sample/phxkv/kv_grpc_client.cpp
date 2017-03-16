@@ -145,6 +145,7 @@ int PhxKVClient :: GetLocal(
     return ret;
 }
 
+// 为什么这里没有 iDeep 什么事呢 ?
 int PhxKVClient :: Delete( 
         const std::string & sKey, 
         const uint64_t llVersion,

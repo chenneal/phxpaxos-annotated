@@ -80,7 +80,7 @@ public:
     virtual void AddStateMachine(const int iGroupIdx, StateMachine * poSM) = 0;
 
     //Timeout control.
-    virtual void SetTimeoutMs(const int iTimeoutMs) = 0;
+    virtual void (const int iTimeoutMs) = 0;
 
     //Checkpoint
     
@@ -103,7 +103,7 @@ public:
     //Paxos log cleaner default is pausing.
     
     //pause paxos log cleaner.
-    virtual void PausePaxosLogCleaner() = 0;
+    virtual void () = 0;
 
     //Continue to run paxos log cleaner.
     virtual void ContinuePaxosLogCleaner() = 0;

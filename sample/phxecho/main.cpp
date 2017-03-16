@@ -31,6 +31,8 @@ using namespace phxecho;
 using namespace phxpaxos;
 using namespace std;
 
+// 这个函数在整个项目中出现了很多次，主要是为了从main函数的命令行参数中提取ip和port信息，
+// 本函数是为了提取本机的ip和port。
 int parse_ipport(const char * pcStr, NodeInfo & oNodeInfo)
 {
     char sIP[32] = {0};
@@ -47,6 +49,8 @@ int parse_ipport(const char * pcStr, NodeInfo & oNodeInfo)
     return 0;
 }
 
+// 和上一个函数一样，不过这个函数是为了提取整个系统中所有node的ip和port信息，
+// 像这些目的明确的小函数没必要搞的太清楚，知道干什么的就行了。
 int parse_ipport_list(const char * pcStr, NodeInfoList & vecNodeInfoList)
 {
     string sTmpStr;
@@ -103,7 +107,10 @@ int main(int argc, char ** argv)
         return -1;
     }
 
+	// 通过本机信息和系统中的所有节点的信息初始化一个PhxEchoServer实例。
     PhxEchoServer oEchoServer(oMyNode, vecNodeInfoList);
+	
+	// 关键的一个函数，跑完这个函数之后，就可以确保server服务已经起来了，只需要传递数据即可。
     int ret = oEchoServer.RunPaxos();
     if (ret != 0)
     {

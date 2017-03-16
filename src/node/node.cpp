@@ -41,6 +41,8 @@ int Node :: RunNode(const Options & oOptions, Node *& poNode)
     BP->SetInstance(oOptions.poBreakpoint);
 
     PNode * poRealNode = new PNode();
+	
+	// Init()是一个关键函数，很多结构的初始化工作都是在这个函数里面完成的
     int ret = poRealNode->Init(oOptions, poNetWork);
     if (ret != 0)
     {

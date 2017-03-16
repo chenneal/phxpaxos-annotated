@@ -80,6 +80,8 @@ int PhxKV :: RunPaxos()
     oOptions.oMyNode = m_oMyNode;
     oOptions.vecNodeInfoList = m_vecNodeList;
 
+    // ’‚¿Ô”–typo state
+    
     //because all group share state machine(kv), so every group have same sate machine.
     //just for split key to different paxos group, to upgrate performance.
     for (int iGroupIdx = 0; iGroupIdx < m_iGroupCount; iGroupIdx++)

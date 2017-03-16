@@ -77,6 +77,7 @@ void NodeInfo :: SetNodeID(const nodeid_t iNodeID)
 
 void NodeInfo :: MakeNodeID()
 {
+    // 每个节点的ID分为两部分，前32位是IP地址的32位数值化，后32位是端口号
     uint32_t iIP = (uint32_t)inet_addr(m_sIP.c_str());
     assert(iIP != (uint32_t)-1);
 
@@ -87,6 +88,7 @@ void NodeInfo :: MakeNodeID()
 
 void NodeInfo :: ParseNodeID()
 {
+    // 根据节点的ID取出IP和Port值并赋给变量成员
     m_iPort = m_iNodeID & (0xffffffff);
 
     in_addr addr;
@@ -107,6 +109,7 @@ GroupSMInfo :: GroupSMInfo()
 
 /////////////////////////////////////////////////////////////
 
+// 每个选项的默认值
 Options :: Options()
 {
     poLogStorage = nullptr;
