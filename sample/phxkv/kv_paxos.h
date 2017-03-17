@@ -39,11 +39,14 @@ public:
     PhxKV(const phxpaxos::NodeInfo & oMyNode, const phxpaxos::NodeInfoList & vecNodeList,
             const std::string & sKVDBPath, const std::string & sPaxosLogPath);
     ~PhxKV();
-
+	
+    // 主要的工作都在这里。
     int RunPaxos();
 
+    // 获取集群的 master 节点信息，其实是个皮包函数，上家是 PNode 。
     const phxpaxos::NodeInfo GetMaster(const std::string & sKey);
-    
+
+    // 和上述函数一个性质，获知自己是否为 master 。
     const bool IsIMMaster(const std::string & sKey);
 
     PhxKVStatus Put(
@@ -63,6 +66,7 @@ public:
 private:
     int GetGroupIdx(const std::string & sKey);
 
+    // paxos 入口，是不是看到了熟悉的词?
     int KVPropose(const std::string & sKey, const std::string & sPaxosValue, PhxKVSMCtx & oPhxKVSMCtx);
 
 private:
@@ -71,8 +75,13 @@ private:
     std::string m_sKVDBPath;
     std::string m_sPaxosLogPath;
 
+    // Group 数量，只是为了并发，和 paxos 本身无关。
     int m_iGroupCount;
+    // 这是 phxpaxos 最核心的类，寄存着 node 的一切关于 paxos 的信息，
+    // Node 是个抽象类，真正的类是 PNode 。
     phxpaxos::Node * m_poPaxosNode;
+
+    // 本例的状态机定义。
     PhxKVSM m_oPhxKVSM;
 };
     

@@ -42,8 +42,10 @@ int PhxKVServiceImpl :: Init()
 
 Status PhxKVServiceImpl :: Put(ServerContext* context, const KVOperator * request, KVResponse * reply)
 {
+    // 查看当前的节点是否为 master 节点，如果不是，直接回绝并返回 master 节点的信息。
     if (!m_oPhxKV.IsIMMaster(request->key()))
     {
+        // 返回的结果信息包装，包括返回状态与 master 信息。 
         reply->set_ret((int)PhxKVStatus::MASTER_REDIRECT);
         uint64_t llMasterNodeID = m_oPhxKV.GetMaster(request->key()).GetNodeID();
         reply->set_master_nodeid(llMasterNodeID);

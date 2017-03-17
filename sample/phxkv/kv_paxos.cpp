@@ -123,12 +123,16 @@ int PhxKV :: KVPropose(const std::string & sKey, const std::string & sPaxosValue
 {
     int iGroupIdx = GetGroupIdx(sKey);
 
+    // 状态机的变量。
     SMCtx oCtx;
     //smid must same to PhxKVSM.SMID().
     oCtx.m_iSMID = 1;
+    // 上述的状态机只是个包装，真正的是它的 void * 指针成员变量 m_pCtx，
+    // 它指向一个 PhxKVSMCtx ，这个就是 KV sample 的状态机类。
     oCtx.m_pCtx = (void *)&oPhxKVSMCtx;
 
     uint64_t llInstanceID = 0;
+    // 这是 Propose 的通用函数入口，注意它是 PNode 的类成员。
     int ret = m_poPaxosNode->Propose(iGroupIdx, sPaxosValue, llInstanceID, &oCtx);
     if (ret != 0)
     {
@@ -145,6 +149,7 @@ PhxKVStatus PhxKV :: Put(
         const uint64_t llVersion)
 {
     string sPaxosValue;
+    // 将相应的值序列化到 sPaxosValue 中去，用到了 Protobuf 。
     bool bSucc = PhxKVSM::MakeSetOpValue(sKey, sValue, llVersion, sPaxosValue);
     if (!bSucc)
     {
@@ -152,6 +157,7 @@ PhxKVStatus PhxKV :: Put(
     }
 
     PhxKVSMCtx oPhxKVSMCtx;
+    // 重点来了，这里其实就是 paxos 里的 propose 。
     int ret = KVPropose(sKey, sPaxosValue, oPhxKVSMCtx);
     if (ret != 0)
     {

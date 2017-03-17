@@ -93,9 +93,11 @@ int main(int argc, char ** argv)
         return -1;
     }
 
+    // 服务器地址。
     string sServerAddress = argv[1];
 
     NodeInfo oMyNode;
+    // 服务器的端口号。
     if (parse_ipport(argv[2], oMyNode) != 0)
     {
         printf("parse myip:myport fail\n");
@@ -103,13 +105,17 @@ int main(int argc, char ** argv)
     }
 
     NodeInfoList vecNodeInfoList;
+    // 第 3 个命令行参数是一连串的 ip 和 port 值，这里是指整个集群所有的 node 的参数
+    // 当然也包括它自己。
     if (parse_ipport_list(argv[3], vecNodeInfoList) != 0)
     {
         printf("parse ip/port list fail\n");
         return -1;
     }
 
+    // 第 4 个参数代表 levelDB 的存储路径，即真实数据的存储路径。
     string sKVDBPath = argv[4];
+    // 第 5 个参数代表 paxos log 的存储路径，即 append log ，注意与上面的区别。
     string sPaxosLogPath = argv[5];
 
     int ret = LOGGER->Init("phxkv", "./log", 3);
@@ -121,7 +127,9 @@ int main(int argc, char ** argv)
 
     NLDebug("server init start.............................");
 
+    // 服务端服务类的初始化，此类继承了Protobuf 的 Service 类。
     PhxKVServiceImpl oPhxKVServer(oMyNode, vecNodeInfoList, sKVDBPath, sPaxosLogPath);
+    // 服务类的初始化函数，重点分析。
     ret = oPhxKVServer.Init();
     if (ret != 0)
     {
@@ -131,6 +139,7 @@ int main(int argc, char ** argv)
 
     NLDebug("server init ok.............................");
 
+    // 下面是 grpc 启动服务类的过程，先不用管。
     ServerBuilder oBuilder;
 
     oBuilder.AddListeningPort(sServerAddress, grpc::InsecureServerCredentials());
