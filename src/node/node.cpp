@@ -27,22 +27,25 @@ namespace phxpaxos
 
 int Node :: RunNode(const Options & oOptions, Node *& poNode)
 {
+    // 对大数据量的值做了专门的处理优化。
     if (oOptions.bIsLargeValueMode)
     {
         InsideOptions::Instance()->SetAsLargeBufferMode();
     }
-    
+    // 设置 group 的数量
     InsideOptions::Instance()->SetGroupCount(oOptions.iGroupCount);
         
     poNode = nullptr;
     NetWork * poNetWork = nullptr;
 
+    // 可以经常看到这个 BP ，这里的 Breakpoint 其实是个单例，
+    // 目的是为了方便调试。
     Breakpoint::m_poBreakpoint = nullptr;
     BP->SetInstance(oOptions.poBreakpoint);
 
     PNode * poRealNode = new PNode();
 	
-	// Init()是一个关键函数，很多结构的初始化工作都是在这个函数里面完成的
+    // 很多结构的初始化工作都是在这个函数里面完成的。
     int ret = poRealNode->Init(oOptions, poNetWork);
     if (ret != 0)
     {
@@ -50,16 +53,20 @@ int Node :: RunNode(const Options & oOptions, Node *& poNode)
         return ret;
     }
 
+    // 网络结构体指向上面刚刚new的 PNode 对象，以便正确回调。
+    // 初始化工作实在上面的 Init 函数里完成的。
     //step1 set node to network
     //very important, let network on recieve callback can work.
     poNetWork->m_poNode = poRealNode;
 
+    // 启动网络服务，这样 phxpaxos 在做算法的各种 rpc 通信时就通过
+    // 这个网络服务传递消息与 log 。
     //step2 run network.
     //start recieve message from network, so all must init before this step.
     //must be the last step.
     poNetWork->RunNetWork();
 
-
+    // 赋值给指针形参，以便外部能够正确访问。
     poNode = poRealNode;
 
     return 0;

@@ -305,6 +305,7 @@ int Database :: Get(const uint64_t llInstanceID, std::string & sValue)
 
 int Database :: ValueToFileID(const WriteOptions & oWriteOptions, const uint64_t llInstanceID, const std::string & sValue, std::string & sFileID)
 {
+    // 真正的将值固化到了硬盘之中，并且返回 sFileID = fileid + offset + checksum 。
     int ret = m_poValueStore->Append(oWriteOptions, llInstanceID, sValue, sFileID);
     if (ret != 0)
     {
@@ -359,12 +360,14 @@ int Database :: Put(const WriteOptions & oWriteOptions, const uint64_t llInstanc
     }
 
     std::string sFileID;
+
+    // 将值写入到文件之中。
     int ret = ValueToFileID(oWriteOptions, llInstanceID, sValue, sFileID);
     if (ret != 0)
     {
         return ret;
     }
-
+    // 有点迷糊，为啥还要写一遍到 levelDB里呢?
     ret = PutToLevelDB(false, llInstanceID, sFileID);
     
     return ret;
@@ -681,7 +684,8 @@ int MultiDatabase :: Put(const WriteOptions & oWriteOptions, const int iGroupIdx
     {
         return -2;
     }
-    
+    // 每个group 对应一个 database ，比较懵逼的是为何要同时写入
+    // 文件和 levelDB 中，双保险?
     return m_vecDBList[iGroupIdx]->Put(oWriteOptions, llInstanceID, sValue);
 }
 

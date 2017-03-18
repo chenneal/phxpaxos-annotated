@@ -161,6 +161,7 @@ int LogStore :: ExpandFile(int iFd, int & iFileSize)
     if (iFileSize == 0)
     {
         //new file
+        // 撑大文件，这样可以阻止单个文件变得过于庞大。
         iFileSize = lseek(iFd, LOG_FILE_MAX_SIZE - 1, SEEK_SET);
         if (iFileSize != LOG_FILE_MAX_SIZE - 1)
         {
@@ -191,6 +192,7 @@ int LogStore :: IncreaseFileID()
     int iFileID = m_iFileID + 1;
     uint32_t iCheckSum = crc32(0, (const uint8_t*)(&iFileID), sizeof(int));
 
+    // 这里似乎有一个 meta 文件来记录当前的 file ID 号。
     off_t iSeekPos = lseek(m_iMetaFd, 0, SEEK_SET);
     if (iSeekPos == -1)
     {
@@ -293,6 +295,8 @@ int LogStore :: GetFileFD(const int iNeedWriteSize, int & iFd, int & iFileID, in
     iOffset = lseek(m_iFd, m_iNowFileOffset, SEEK_SET);
     assert(iOffset != -1);
 
+    // 这里每次增加新文件的时候都已经被事先扩展了大小，
+    // 这样可以阻止单个文件变得过于庞大。
     if (iOffset + iNeedWriteSize > m_iNowFileSize)
     {
         close(m_iFd);
@@ -358,14 +362,18 @@ int LogStore :: Append(const WriteOptions & oWriteOptions, const uint64_t llInst
     int iLen = sizeof(uint64_t) + sBuffer.size();
     int iTmpBufferLen = iLen + sizeof(int);
 
+    // 一开始我也比较好奇为什么要传大小进去，原来是为了预判写入的大小，
+    // 因为每个文件大小有上限。顺便判断是否需要重新建立文件。
     int ret = GetFileFD(iTmpBufferLen, iFd, iFileID, iOffset);
     if (ret != 0)
     {
         return ret;
     }
 
+    // 事先写入准备好的缓冲区，这个缓冲区会根据需求 2 倍增长。
     m_oTmpAppendBuffer.Ready(iTmpBufferLen);
 
+    // 这里写入了三个值，不说了，很明显，自己看。
     memcpy(m_oTmpAppendBuffer.GetPtr(), &iLen, sizeof(int));
     memcpy(m_oTmpAppendBuffer.GetPtr() + sizeof(int), &llInstanceID, sizeof(uint64_t));
     memcpy(m_oTmpAppendBuffer.GetPtr() + sizeof(int) + sizeof(uint64_t), sBuffer.c_str(), sBuffer.size());
@@ -380,6 +388,7 @@ int LogStore :: Append(const WriteOptions & oWriteOptions, const uint64_t llInst
         return -1;
     }
 
+    // 查看是否打开了 Sync 开关，如果打开，需要等待落盘。
     if (oWriteOptions.bSync)
     {
         int fdatasync_ret = fdatasync(iFd);
@@ -392,6 +401,7 @@ int LogStore :: Append(const WriteOptions & oWriteOptions, const uint64_t llInst
 
     m_iNowFileOffset += iWriteLen;
 
+    // 记录了这次写入的时长。
     int iUseTimeMs = m_oTimeStat.Point();
     BP->GetLogStorageBP()->AppendDataOK(iWriteLen, iUseTimeMs);
     

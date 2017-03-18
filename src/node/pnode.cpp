@@ -104,6 +104,7 @@ int PNode :: InitNetWork(const Options & oOptions, NetWork *& poNetWork)
         return 0;
     }
 
+    // 没有自定义入口，就是用默认网络。
     int ret = m_oDefaultNetWork.Init(oOptions.oMyNode.GetIP(), oOptions.oMyNode.GetPort());
     if (ret != 0)
     {
@@ -218,23 +219,29 @@ void PNode :: RunProposeBatch()
 
 int PNode :: Init(const Options & oOptions, NetWork *& poNetWork)
 {
+    // 检查 Options 的每一个参数，看看是否合法。
     int ret = CheckOptions(oOptions);
     if (ret != 0)
     {
         PLErr("CheckOptions fail, ret %d", ret);
         return ret;
     }
-
+    // 获取节点 ID 号。
     m_iMyNodeID = oOptions.oMyNode.GetNodeID();
 
     //step1 init logstorage
     LogStorage * poLogStorage = nullptr;
+
+    // 初始化 paxos log 的记录模块。
+    // 这里非常的搞笑，我进去一看默认的 log 写入模块一直保持
+    // 双写入，至今不知道为什么。
     ret = InitLogStorage(oOptions, poLogStorage);
     if (ret != 0)
     {
         return ret;
     }
 
+    // 初始化网络模块。
     //step2 init network
     ret = InitNetWork(oOptions, poNetWork);
     if (ret != 0)
@@ -242,6 +249,9 @@ int PNode :: Init(const Options & oOptions, NetWork *& poNetWork)
         return ret;
     }
 
+    // 为每个 Group 初始化 master 的管理类，因为官方样例中有选主的例子，
+    // 但是要打开状态机的开关，但这里似乎并没有判断，暂时不懂，后续
+    // 再看。
     //step3 build masterlist
     for (int iGroupIdx = 0; iGroupIdx < oOptions.iGroupCount; iGroupIdx++)
     {
@@ -256,6 +266,9 @@ int PNode :: Init(const Options & oOptions, NetWork *& poNetWork)
         }
     }
 
+    // 这个 Group 类记录了每个 Group 的结构，其中有个
+    // Instance 成员包含了 paxos 各个角色的定义，初始化
+    // 参数包含上述的 log 和 网络模块。
     //step4 build grouplist
     for (int iGroupIdx = 0; iGroupIdx < oOptions.iGroupCount; iGroupIdx++)
     {
@@ -264,6 +277,7 @@ int PNode :: Init(const Options & oOptions, NetWork *& poNetWork)
         m_vecGroupList.push_back(poGroup);
     }
 
+    // 成组提交模式，先不用管。
     //step5 build batchpropose
     if (oOptions.bUseBatchPropose)
     {
@@ -274,16 +288,19 @@ int PNode :: Init(const Options & oOptions, NetWork *& poNetWork)
             m_vecProposeBatch.push_back(poProposeBatch);
         }
     }
-
+    // 初始化所有 group 的状态机，其实就是加入到 Instance 的的状态机列表里。
     //step6 init statemachine
     InitStateMachine(oOptions);    
 
+    // 启动了每个 group 的初始化服务，注释写了并行，我想是因为每
+    // 个线程不需要等到上一个线程启动完毕就开始启动工作了。
     //step7 parallel init group
     for (auto & poGroup : m_vecGroupList)
     {
         poGroup->StartInit();
     }
 
+    // 由于是并行的初始化，需要 join 来等待全部初始化完毕。
     for (auto & poGroup : m_vecGroupList)
     {
         int initret = poGroup->GetInitRet();
@@ -306,7 +323,9 @@ int PNode :: Init(const Options & oOptions, NetWork *& poNetWork)
         //start group's thread first.
         poGroup->Start();
     }
+    // 这个 Options 里有是否启动 master 服务的选项。
     RunMaster(oOptions);
+    // 成组提交。
     RunProposeBatch();
 
     PLHead("OK");

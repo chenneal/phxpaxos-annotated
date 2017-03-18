@@ -47,7 +47,7 @@ int PhxEchoServer :: MakeLogStoragePath(std::string & sLogStoragePath)
 {
     char sTmp[128] = {0};
 	
-	// log 的文件名，由 IP 地址和 port 号来区分。
+    // log 的文件名，由 IP 地址和 port 号来区分。
     snprintf(sTmp, sizeof(sTmp), "./logpath_%s_%d", m_oMyNode.GetIP().c_str(), m_oMyNode.GetPort());
 
     sLogStoragePath = string(sTmp);
@@ -80,12 +80,12 @@ int PhxEchoServer :: RunPaxos()
 
     oOptions.oMyNode = m_oMyNode;
 	
-	// 这里为什么要使用深拷贝呢，不过似乎开销并不大。
+    // 这里为什么要使用深拷贝呢，不过似乎开销并不大。
     oOptions.vecNodeInfoList = m_vecNodeList;
 
     GroupSMInfo oSMInfo;
 
-	// 这里的 group index 只是为了区分不同的 group，同时运行多个 group 只是为了提高系统的并行度，互相不干扰。
+    // 这里的 group index 只是为了区分不同的 group，同时运行多个 group 只是为了提高系统的并行度，互相不干扰。
     oSMInfo.iGroupIdx = 0;
 	
     //one paxos group can have multi state machine.

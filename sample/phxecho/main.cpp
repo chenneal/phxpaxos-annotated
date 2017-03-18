@@ -107,10 +107,10 @@ int main(int argc, char ** argv)
         return -1;
     }
 
-	// 通过本机信息和系统中的所有节点的信息初始化一个PhxEchoServer实例。
+    // 通过本机信息和系统中的所有节点的信息初始化一个PhxEchoServer实例。
     PhxEchoServer oEchoServer(oMyNode, vecNodeInfoList);
 	
-	// 关键的一个函数，跑完这个函数之后，就可以确保server服务已经起来了，只需要传递数据即可。
+    // 关键的一个函数，跑完这个函数之后，就可以确保server服务已经起来了，只需要传递数据即可。
     int ret = oEchoServer.RunPaxos();
     if (ret != 0)
     {

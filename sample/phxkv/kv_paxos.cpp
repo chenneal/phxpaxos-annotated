@@ -68,24 +68,31 @@ int PhxKV :: RunPaxos()
     {
         return -1;
     }
-    
+
+    // 一个选项类，设置所有用户所见的可控变量参数。
     Options oOptions;
 
+    // paxos log 存放的路径，即 append log 。
     oOptions.sLogStoragePath = m_sPaxosLogPath;
 
+    // Group 的数量，之前提过，只是为了并发。
     //this groupcount means run paxos group count.
     //every paxos group is independent, there are no any communicate between any 2 paxos group.
     oOptions.iGroupCount = m_iGroupCount;
 
+    // 本机节点信息。
     oOptions.oMyNode = m_oMyNode;
+    // 集群几点信息，其实就是节点信息的 vector 。
     oOptions.vecNodeInfoList = m_vecNodeList;
 
-    // 这里有typo state
-    
+    // 这里有个 typo state 。 
     //because all group share state machine(kv), so every group have same sate machine.
     //just for split key to different paxos group, to upgrate performance.
     for (int iGroupIdx = 0; iGroupIdx < m_iGroupCount; iGroupIdx++)
     {
+        // 这里的意思是每个 Group 并发执行，但是需要共享状态机，
+        // 这里的状态机指的就是 KV 数据库，那么如何并发 ? 很容易
+        // 每个 Group 只负责属于它管辖的数据，用 Hash 散一下就行。
         GroupSMInfo oSMInfo;
         oSMInfo.iGroupIdx = iGroupIdx;
         oSMInfo.vecSMList.push_back(&m_oPhxKVSM);
@@ -96,7 +103,7 @@ int PhxKV :: RunPaxos()
 
     //set logfunc
     oOptions.pLogFunc = LOGGER->GetLogFunc();
-
+    // 不用讲了，这个 RunNode 负责整个节点的启动工作。 
     int ret = Node::RunNode(oOptions, m_poPaxosNode);
     if (ret != 0)
     {

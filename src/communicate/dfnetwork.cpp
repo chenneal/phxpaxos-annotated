@@ -43,6 +43,7 @@ void DFNetWork :: StopNetWork()
 
 int DFNetWork :: Init(const std::string & sListenIp, const int iListenPort) 
 {
+    // 默认网络初始化，先初始化了 UDP send 模块。
     int ret = m_oUDPSend.Init();
     if (ret != 0)
     {
@@ -55,6 +56,7 @@ int DFNetWork :: Init(const std::string & sListenIp, const int iListenPort)
         return ret;
     }
 
+    // 初始化 TCP 模块，要注意在使用 TCP 的时候使用了 epoll 模型。
     ret = m_oTcpIOThread.Init(sListenIp, iListenPort);
     if (ret != 0)
     {
