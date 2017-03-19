@@ -51,7 +51,8 @@ int Communicate :: Send(const nodeid_t iNodeID, const NodeInfo & oNodeInfo,
     }
 
     BP->GetNetworkBP()->Send(sMessage);
-    
+
+	// 这里默认采用 UDP 发送，但是数据量大的时候使用 TCP 。
     if (sMessage.size() > m_iUDPMaxSize || iSendType == Message_SendType_TCP)
     {
         BP->GetNetworkBP()->SendTcp(sMessage);
