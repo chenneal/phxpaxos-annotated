@@ -202,8 +202,11 @@ bool Cleaner :: DeleteOne(const uint64_t llInstanceID)
         return false;
     }
 
+    // 被删除的肯定是已经被 chosen 的 instance 里面最小编号的值。
     m_poCheckpointMgr->SetMinChosenInstanceIDCache(llInstanceID);
 
+    // 将目前已经 chosen 的最小的 instance ID 写入到 paxos log 中，为何要 + 1，还不太懂。
+    // 写入是严格同步的，所以开销会很大，这里直接设置了一个条件阻止写入过于频繁。
     if (llInstanceID >= m_llLastSave + DELETE_SAVE_INTERVAL)
     {
         int ret = m_poCheckpointMgr->SetMinChosenInstanceID(llInstanceID + 1);
