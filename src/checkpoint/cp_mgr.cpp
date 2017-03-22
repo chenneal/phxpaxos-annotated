@@ -71,8 +71,10 @@ void CheckpointMgr :: Start()
 {
     if (m_bUseCheckpointReplayer)
     {
+        // 通过 checkpoint 回放。
         m_oReplayer.start();
     }
+    // 清理线程是必开。
     m_oCleaner.start();
 }
 
