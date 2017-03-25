@@ -217,6 +217,7 @@ int Base :: SendMessage(const nodeid_t iSendtoNodeID, const PaxosMsg & oPaxosMsg
 
     if (iSendtoNodeID == m_poConfig->GetMyNodeID())
     {
+        // 这里判断是否是本地节点，如果是直接调用消息判断处理函数。
         m_poInstance->OnReceivePaxosMsg(oPaxosMsg);
         return 0; 
     }

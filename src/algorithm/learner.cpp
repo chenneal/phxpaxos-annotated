@@ -437,6 +437,7 @@ void Learner :: OnComfirmAskForLearn(const PaxosMsg & oPaxosMsg)
     PLGImp("OK, success comfirm");
 }
 
+// 注意这个函数的bNeedAck 默认值为true，也就是需要对方返回结果，但是这边不予等待。
 int Learner :: SendLearnValue(
         const nodeid_t iSendNodeID,
         const uint64_t llLearnInstanceID,
@@ -461,6 +462,7 @@ int Learner :: SendLearnValue(
         oPaxosMsg.set_flag(PaxosMsgFlagType_SendLearnValue_NeedAck);
     }
 
+	//这里用 TCP 的原因是什么? learn 的话要求高?
     return SendMessage(iSendNodeID, oPaxosMsg, Message_SendType_TCP);
 }
 
