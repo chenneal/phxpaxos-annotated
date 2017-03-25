@@ -128,7 +128,7 @@ const bool LearnerSender :: CheckAck(const uint64_t llSendInstanceID)
             BP->GetLearnerBP()->SenderAckTimeout();
             PLGErr("Ack timeout, last acktime %lu now send instanceid %lu", 
                     m_llAbsLastAckTime, llSendInstanceID);
-			// 如果超时并且超速了设定的参数值，减速即可。
+            // 如果超时并且超速了设定的参数值，减速即可。
             CutAckLead();
             m_oLock.UnLock();
             return false;
@@ -138,7 +138,7 @@ const bool LearnerSender :: CheckAck(const uint64_t llSendInstanceID)
         //PLGErr("Need sleep to slow down send speed, sendinstaceid %lu ackinstanceid %lu",
                 //llSendInstanceID, m_llAckInstanceID);
 
-		// 如果没有超时，简单地等 20 ms，让对方的学习速度追上自己。
+        // 如果没有超时，简单地等 20 ms，让对方的学习速度追上自己。
         m_oLock.WaitTime(20);
     }
 
@@ -239,10 +239,10 @@ void LearnerSender :: SendLearnedValue(const uint64_t llBeginInstanceID, const n
     //control send speed to avoid affecting the network too much.
     int iSendQps = LearnerSender_SEND_QPS;
 	
-	// 这里难道不是写反了? 为什么 qps 越高，反而休眠的时间越少?
+    // 这里难道不是写反了? 为什么 qps 越高，反而休眠的时间越少?
     int iSleepMs = iSendQps > 1000 ? 1 : 1000 / iSendQps;
 	
-	// 指的是每次超过下面这个值时 learn 线程会休眠一会儿，防止网络资源占用过大。
+    // 指的是每次超过下面这个值时 learn 线程会休眠一会儿，防止网络资源占用过大。
     int iSendInterval = iSendQps > 1000 ? iSendQps / 1000 + 1 : 1; 
 
     PLGDebug("SendQps %d SleepMs %d SendInterval %d AckLead %d",

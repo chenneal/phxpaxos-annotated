@@ -462,7 +462,7 @@ int Learner :: SendLearnValue(
         oPaxosMsg.set_flag(PaxosMsgFlagType_SendLearnValue_NeedAck);
     }
 
-	//这里用 TCP 的原因是什么? learn 的话要求高?
+    //这里用 TCP 的原因是什么? learn 的话要求高?
     return SendMessage(iSendNodeID, oPaxosMsg, Message_SendType_TCP);
 }
 
