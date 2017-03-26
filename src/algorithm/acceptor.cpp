@@ -105,6 +105,8 @@ int AcceptorState :: Persist(const uint64_t llInstanceID, const uint32_t iLastCh
     oWriteOptions.bSync = m_poConfig->LogSync();
     if (oWriteOptions.bSync)
     {
+        // 这里的控制在好几个地方也看到了，这里是为了减少磁盘的同步写入开销
+        // 每隔 m_iSyncTimes 同步到磁盘一次。
         m_iSyncTimes++;
         if (m_iSyncTimes > m_poConfig->SyncInterval())
         {
@@ -131,6 +133,7 @@ int AcceptorState :: Persist(const uint64_t llInstanceID, const uint32_t iLastCh
     return 0;
 }
 
+// 这个函数往往是 down 掉以后重启时调用的，可以复现之前的 acceptor 的所有状态。
 int AcceptorState :: Load(uint64_t & llInstanceID)
 {
     int ret = m_oPaxosLog.GetMaxInstanceIDFromLog(m_poConfig->GetMyGroupIdx(), llInstanceID);
@@ -188,6 +191,7 @@ Acceptor :: ~Acceptor()
 int Acceptor :: Init()
 {
     uint64_t llInstanceID = 0;
+    // 恢复宕机之前的状态。
     int ret = m_oAcceptorState.Load(llInstanceID);
     if (ret != 0)
     {
@@ -240,17 +244,22 @@ int Acceptor :: OnPrepare(const PaxosMsg & oPaxosMsg)
                 m_oAcceptorState.GetPromiseBallot().m_llNodeID,
                 m_oAcceptorState.GetAcceptedBallot().m_llProposalID,
                 m_oAcceptorState.GetAcceptedBallot().m_llNodeID);
-        
+
+	// 回传消息里包括已经 accept 的最大的 ballot id 的值。
         oReplyPaxosMsg.set_preacceptid(m_oAcceptorState.GetAcceptedBallot().m_llProposalID);
         oReplyPaxosMsg.set_preacceptnodeid(m_oAcceptorState.GetAcceptedBallot().m_llNodeID);
 
+        // 如果此前没有任何 accept 的值，由 proposer 自己决定。 
         if (m_oAcceptorState.GetAcceptedBallot().m_llProposalID > 0)
         {
             oReplyPaxosMsg.set_value(m_oAcceptorState.GetAcceptedValue());
         }
 
+        // 更新 promise proposeid 的值。
         m_oAcceptorState.SetPromiseBallot(oBallot);
 
+       // 这里看不太懂，记住已经 promise 的最大值我是懂的，但是这似乎和
+       // accept 的时候固化方式一模一样，难道不需要区分一下吗?
         int ret = m_oAcceptorState.Persist(GetInstanceID(), GetLastChecksum());
         if (ret != 0)
         {
@@ -299,6 +308,8 @@ void Acceptor :: OnAccept(const PaxosMsg & oPaxosMsg)
 
     BallotNumber oBallot(oPaxosMsg.proposalid(), oPaxosMsg.nodeid());
 
+    // 如果得到的 accept 的 ID 值 >= 已经承诺的可以接受的最大值，直接固化到磁盘。
+    // 这里有个疑虑，就是 paxos 的原始定义似乎是要严格相等。
     if (oBallot >= m_oAcceptorState.GetPromiseBallot())
     {
         PLGDebug("[Promise] State.PromiseID %lu State.PromiseNodeID %lu "
@@ -311,7 +322,10 @@ void Acceptor :: OnAccept(const PaxosMsg & oPaxosMsg)
         m_oAcceptorState.SetPromiseBallot(oBallot);
         m_oAcceptorState.SetAcceptedBallot(oBallot);
         m_oAcceptorState.SetAcceptedValue(oPaxosMsg.value());
-        
+
+	// 固化到磁盘记录最大的已经 accept 的值。和上面一样抱有同样的疑问
+	// 不过似乎通过 state 的各个字段是可以判断哪个是 accept ，哪个是 promise
+	// 的值，但是这样未免太麻烦，虽然说 accept 的情况很少。
         int ret = m_oAcceptorState.Persist(GetInstanceID(), GetLastChecksum());
         if (ret != 0)
         {

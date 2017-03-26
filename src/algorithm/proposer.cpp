@@ -27,6 +27,7 @@ See the AUTHORS file for names of contributors.
 namespace phxpaxos
 {
 
+// 记住 proposalID 是从 1 开始的。
 ProposerState :: ProposerState(const Config * poConfig)
 {
     m_poConfig = (Config *)poConfig;
@@ -53,7 +54,11 @@ void ProposerState :: NewPrepare()
 {
     PLGHead("START ProposalID %lu HighestOther %lu MyNodeID %lu",
             m_llProposalID, m_llHighestOtherProposalID, m_poConfig->GetMyNodeID());
-        
+     
+    // 再从新发起 proposal 时，我们要确保自己的 Id 大于所有已经被知晓的
+    // 旧 ID 的最大值，如果相等，增一即可。
+    // ID 增大的时候多半是与其余节点产生了冲突。
+    // 这里不用担心 ID 重复的情况，因为 ballot ID 包含 nodeID 。
     uint64_t llMaxProposalID =
         m_llProposalID > m_llHighestOtherProposalID ? m_llProposalID : m_llHighestOtherProposalID;
 
@@ -77,7 +82,8 @@ void ProposerState :: AddPreAcceptValue(
     {
         return;
     }
-    
+
+    // 更新最大的 ballot ID 值。
     if (oOtherPreAcceptBallot > m_oHighestOtherPreAcceptBallot)
     {
         m_oHighestOtherPreAcceptBallot = oOtherPreAcceptBallot;

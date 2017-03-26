@@ -52,9 +52,11 @@ void Base :: SetInstanceID(const uint64_t llInstanceID)
     m_llInstanceID = llInstanceID;
 }
 
+// 新的 instance 的时候无论是什么角色大家同时自增。
 void Base :: NewInstance()
 {
     m_llInstanceID++;
+    // 这个是个纯虚函数，代表每个角色互相不同的其余工作。
     InitForNewPaxosInstance();
 }
 
@@ -232,6 +234,7 @@ int Base :: SendMessage(const nodeid_t iSendtoNodeID, const PaxosMsg & oPaxosMsg
     return m_poMsgTransport->SendMessage(iSendtoNodeID, sBuffer, iSendType);
 }
 
+// 同时发送给所有的节点做 paxos 消息的处理，自己的节点可以根据消息的 iType 类型选择处理方式。
 int Base :: BroadcastMessage(const PaxosMsg & oPaxosMsg, const int iRunType, const int iSendType)
 {
     if (m_bIsTestMode)
@@ -266,6 +269,7 @@ int Base :: BroadcastMessage(const PaxosMsg & oPaxosMsg, const int iRunType, con
     return ret;
 }
 
+// 跟随者模式需要特殊的处理，所谓的跟随者就是不能够发起 prepare 。
 int Base :: BroadcastMessageToFollower(const PaxosMsg & oPaxosMsg, const int iSendType)
 {
     string sBuffer;
@@ -278,6 +282,7 @@ int Base :: BroadcastMessageToFollower(const PaxosMsg & oPaxosMsg, const int iSe
     return m_poMsgTransport->BroadcastMessageFollower(sBuffer, iSendType);
 }
 
+// 暂时不知道 temp 节点的用处。
 int Base :: BroadcastMessageToTempNode(const PaxosMsg & oPaxosMsg, const int iSendType)
 {
     string sBuffer;

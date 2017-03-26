@@ -463,6 +463,7 @@ int Database :: Del(const WriteOptions & oWriteOptions, const uint64_t llInstanc
     return 0;
 }
 
+// 这个函数是在 log 中寻找已经 promise 或者 accept 的最大的 id 值。
 int Database :: GetMaxInstanceID(uint64_t & llInstanceID)
 {
     llInstanceID = MINCHOSEN_KEY;
@@ -471,6 +472,8 @@ int Database :: GetMaxInstanceID(uint64_t & llInstanceID)
     
     it->SeekToLast();
 
+    // 逆序遍历 log ，只要跳过所有特殊的 key 即可，
+    // 第一个出现的肯定是已经 promise 或者 accept 的最大值。
     while (it->Valid())
     {
         llInstanceID = GetInstanceIDFromKey(it->key().ToString());
