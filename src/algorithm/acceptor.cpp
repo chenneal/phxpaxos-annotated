@@ -245,7 +245,7 @@ int Acceptor :: OnPrepare(const PaxosMsg & oPaxosMsg)
                 m_oAcceptorState.GetAcceptedBallot().m_llProposalID,
                 m_oAcceptorState.GetAcceptedBallot().m_llNodeID);
 
-	// 回传消息里包括已经 accept 的最大的 ballot id 的值。
+        // 回传消息里包括已经 accept 的最大的 ballot id 的值。
         oReplyPaxosMsg.set_preacceptid(m_oAcceptorState.GetAcceptedBallot().m_llProposalID);
         oReplyPaxosMsg.set_preacceptnodeid(m_oAcceptorState.GetAcceptedBallot().m_llNodeID);
 

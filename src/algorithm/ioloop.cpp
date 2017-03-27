@@ -235,6 +235,7 @@ void IOLoop :: RemoveTimer(uint32_t & iTimerID)
     iTimerID = 0;
 }
 
+// 如果发现已经有的已经超时且存在于定时器队列，删除它。
 void IOLoop :: DealwithTimeoutOne(const uint32_t iTimerID, const int iType)
 {
     auto it = m_mapTimerIDExist.find(iTimerID);

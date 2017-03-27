@@ -184,6 +184,7 @@ int Proposer :: NewValue(const std::string & sValue)
     m_iLastPrepareTimeoutMs = START_PREPARE_TIMEOUTMS;
     m_iLastAcceptTimeoutMs = START_ACCEPT_TIMEOUTMS;
 
+    // 这里直接做了 multi-paxos 的优化，去掉了 single-paxos 的第一阶段。
     if (m_bCanSkipPrepare && !m_bWasRejectBySomeone)
     {
         BP->GetProposerBP()->NewProposalSkipPrepare();
@@ -191,6 +192,7 @@ int Proposer :: NewValue(const std::string & sValue)
         PLGHead("skip prepare, directly start accept");
         Accept();
     }
+    // 如果冲突了，要重新执行 prepare 阶段。
     else
     {
         //if not reject by someone, no need to increase ballot
@@ -202,6 +204,7 @@ int Proposer :: NewValue(const std::string & sValue)
 
 void Proposer :: ExitPrepare()
 {
+    // 如果中途退出，说明已经超时了。
     if (m_bIsPreparing)
     {
         m_bIsPreparing = false;
@@ -222,11 +225,13 @@ void Proposer :: ExitAccept()
 
 void Proposer :: AddPrepareTimer(const int iTimeoutMs)
 {
+    // 如果旧 ID 的还在定时器 map 中，去掉就可，重置定时器 ID 为0。
     if (m_iPrepareTimerID > 0)
     {
         m_poIOLoop->RemoveTimer(m_iPrepareTimerID);
     }
 
+    // 3.27 : 暂时认为如果如果传入的 timeout 有新的值，更新即可。
     if (iTimeoutMs > 0)
     {
         m_poIOLoop->AddTimer(
@@ -236,6 +241,8 @@ void Proposer :: AddPrepareTimer(const int iTimeoutMs)
         return;
     }
 
+    // 3.27 : 如果传入的值为 0 ，我们把 timeout 值定 m_iLastPrepareTimeoutMs 
+    // 下次再遇到时直接乘以 2 减少超时的可能性。
     m_poIOLoop->AddTimer(
             m_iLastPrepareTimeoutMs,
             Timer_Proposer_Prepare_Timeout,
@@ -245,6 +252,7 @@ void Proposer :: AddPrepareTimer(const int iTimeoutMs)
 
     PLGHead("timeoutms %d", m_iLastPrepareTimeoutMs);
 
+    // 最新的 prepare timeout 默认值直接乘以 2，但是不能超过阈值。 
     m_iLastPrepareTimeoutMs *= 2;
     if (m_iLastPrepareTimeoutMs > MAX_PREPARE_TIMEOUTMS)
     {
@@ -295,9 +303,11 @@ void Proposer :: Prepare(const bool bNeedNewBallot)
     
     ExitAccept();
     m_bIsPreparing = true;
+    // 进入了这个函数，代表不能跳过一阶段。
     m_bCanSkipPrepare = false;
     m_bWasRejectBySomeone = false;
 
+    // 重置最大值选项，方便冲突后新的 ballotID 的选定。
     m_oProposerState.ResetHighestOtherPreAcceptBallot();
     if (bNeedNewBallot)
     {
@@ -310,12 +320,15 @@ void Proposer :: Prepare(const bool bNeedNewBallot)
     oPaxosMsg.set_nodeid(m_poConfig->GetMyNodeID());
     oPaxosMsg.set_proposalid(m_oProposerState.GetProposalID());
 
+    // 不管 accept 成功还是失败，我们都开始新的一轮计数。
     m_oMsgCounter.StartNewRound();
 
+    // 将当前的 prepare 加入到定时器当中去。
     AddPrepareTimer();
 
     PLGHead("END OK");
 
+    // 广播给所有的节点尝试 prepare 。
     BroadcastMessage(oPaxosMsg);
 }
 
@@ -326,7 +339,8 @@ void Proposer :: OnPrepareReply(const PaxosMsg & oPaxosMsg)
             oPaxosMsg.nodeid(), oPaxosMsg.rejectbypromiseid());
 
     BP->GetProposerBP()->OnPrepareReply();
-    
+
+    // 收到消息时发现已经不在 prepare 阶段了，直接忽略这个消息。
     if (!m_bIsPreparing)
     {
         BP->GetProposerBP()->OnPrepareReplyButNotPreparing();
@@ -334,6 +348,7 @@ void Proposer :: OnPrepareReply(const PaxosMsg & oPaxosMsg)
         return;
     }
 
+    // 虽然正在 prepare 阶段，但是 proposeID 不一致，同样忽略。
     if (oPaxosMsg.proposalid() != m_oProposerState.GetProposalID())
     {
         BP->GetProposerBP()->OnPrepareReplyNotSameProposalIDMsg();
@@ -341,6 +356,7 @@ void Proposer :: OnPrepareReply(const PaxosMsg & oPaxosMsg)
         return;
     }
 
+    // 统计回复的节点数量。
     m_oMsgCounter.AddReceive(oPaxosMsg.nodeid());
 
     if (oPaxosMsg.rejectbypromiseid() == 0)
@@ -348,25 +364,35 @@ void Proposer :: OnPrepareReply(const PaxosMsg & oPaxosMsg)
         BallotNumber oBallot(oPaxosMsg.preacceptid(), oPaxosMsg.preacceptnodeid());
         PLGDebug("[Promise] PreAcceptedID %lu PreAcceptedNodeID %lu ValueSize %zu", 
                 oPaxosMsg.preacceptid(), oPaxosMsg.preacceptnodeid(), oPaxosMsg.value().size());
+        // 统计赞成的节点数量。
         m_oMsgCounter.AddPromiseOrAccept(oPaxosMsg.nodeid());
         m_oProposerState.AddPreAcceptValue(oBallot, oPaxosMsg.value());
     }
     else
     {
         PLGDebug("[Reject] RejectByPromiseID %lu", oPaxosMsg.rejectbypromiseid());
+        
+        // 统计拒绝的节点数量。
         m_oMsgCounter.AddReject(oPaxosMsg.nodeid());
         m_bWasRejectBySomeone = true;
         m_oProposerState.SetOtherProposalID(oPaxosMsg.rejectbypromiseid());
     }
 
+    // 超过半数赞同意味着本次 prepare 阶段成功。
     if (m_oMsgCounter.IsPassedOnThisRound())
     {
         int iUseTimeMs = m_oTimeStat.Point();
         BP->GetProposerBP()->PreparePass(iUseTimeMs);
         PLGImp("[Pass] start accept, usetime %dms", iUseTimeMs);
+
+        // 3.21 : 下次再次运行 proposer 时，不需要再进行 prepare 阶段了。
+        // 可能有人会问为什么要这样，因为在等待 accept 回复的过程中，
+        // 当前线程会扔进 loop 中，再次唤醒需要一个标志位判断。
         m_bCanSkipPrepare = true;
         Accept();
     }
+    // 3.21 : 收到大多数节点 reject 的消息或者已经收到了收到了所有节点的消息。
+    // 设立一个随机的定时器，为的是与别的节点避免冲突。
     else if (m_oMsgCounter.IsRejectedOnThisRound()
             || m_oMsgCounter.IsAllReceiveOnThisRound())
     {
@@ -395,7 +421,8 @@ void Proposer :: Accept()
 
     BP->GetProposerBP()->Accept();
     m_oTimeStat.Point();
-    
+
+    // 已经到了 accept 状态，清除 prepare 阶段的标志位和定时器。
     ExitPrepare();
     m_bIsAccepting = true;
     
@@ -407,12 +434,14 @@ void Proposer :: Accept()
     oPaxosMsg.set_value(m_oProposerState.GetValue());
     oPaxosMsg.set_lastchecksum(GetLastChecksum());
 
+    // 不管 accept 成功还是失败，我们都开始新的一轮计数。
     m_oMsgCounter.StartNewRound();
 
     AddAcceptTimer();
 
     PLGHead("END");
 
+    // 3.27 : 发送给所有的节点尝试 accept ，自己最后再尝试，这样有什么意义么?
     BroadcastMessage(oPaxosMsg, BroadcastMessage_Type_RunSelf_Final);
 }
 
@@ -424,6 +453,7 @@ void Proposer :: OnAcceptReply(const PaxosMsg & oPaxosMsg)
 
     BP->GetProposerBP()->OnAcceptReply();
 
+    // 和 onprepare 一样，忽略消息，下同。
     if (!m_bIsAccepting)
     {
         //PLGErr("Not proposing, skip this msg");
@@ -496,7 +526,8 @@ void Proposer :: OnPrepareTimeout()
     }
 
     BP->GetProposerBP()->PrepareTimeout();
-    
+
+    // 如果是因为与其它节点发生冲突，重新分配 proposalID 值。
     Prepare(m_bWasRejectBySomeone);
 }
 
@@ -512,7 +543,8 @@ void Proposer :: OnAcceptTimeout()
     }
     
     BP->GetProposerBP()->AcceptTimeout();
-    
+
+    // 同上
     Prepare(m_bWasRejectBySomeone);
 }
 

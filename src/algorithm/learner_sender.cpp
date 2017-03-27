@@ -240,6 +240,7 @@ void LearnerSender :: SendLearnedValue(const uint64_t llBeginInstanceID, const n
     int iSendQps = LearnerSender_SEND_QPS;
 	
     // 这里难道不是写反了? 为什么 qps 越高，反而休眠的时间越少?
+    // 3.27 更新: 作者回复了，我眼花看错了，应该是在低速的时候保持更长的休眠时间。
     int iSleepMs = iSendQps > 1000 ? 1 : 1000 / iSendQps;
 	
     // 指的是每次超过下面这个值时 learn 线程会休眠一会儿，防止网络资源占用过大。

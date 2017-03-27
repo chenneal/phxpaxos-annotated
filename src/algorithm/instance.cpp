@@ -558,6 +558,10 @@ int Instance :: ReceiveMsgForProposer(const PaxosMsg & oPaxosMsg)
             //This causes the node to remain in catch-up state.
             //
             //To avoid this problem, we need to deal with the expired reply.
+            
+            // 3.26 : 作者的意思是虽然节点收到了其余节点的消息，但是发现
+            // 消息和本次并不是处在一个 instance 之中，这时如果还是 reject 消息
+            // 就显得比较尴尬了，需要提升自己的 proposalID 才行，否则一直落后。
             if (oPaxosMsg.msgtype() == MsgType_PaxosPrepareReply)
             {
                 m_oProposer.OnExpiredPrepareReply(oPaxosMsg);
@@ -599,7 +603,9 @@ int Instance :: ReceiveMsgForAcceptor(const PaxosMsg & oPaxosMsg, const bool bIs
     {
         BP->GetInstanceBP()->OnReceivePaxosAcceptorMsgInotsame();
     }
-    
+
+    // 这里做了一个优化，当收到大于当前 instanceID 的消息时，代表
+    // 上一轮的 instance 已经结束，直接学习上一次 instance 的值。
     if (oPaxosMsg.instanceid() == m_oAcceptor.GetInstanceID() + 1)
     {
         //skip success message

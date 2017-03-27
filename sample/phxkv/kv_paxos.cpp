@@ -103,6 +103,7 @@ int PhxKV :: RunPaxos()
 
     //set logfunc
     oOptions.pLogFunc = LOGGER->GetLogFunc();
+
     // 不用讲了，这个 RunNode 负责整个节点的启动工作。 
     int ret = Node::RunNode(oOptions, m_poPaxosNode);
     if (ret != 0)
