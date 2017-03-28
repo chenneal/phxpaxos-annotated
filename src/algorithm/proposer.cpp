@@ -387,7 +387,7 @@ void Proposer :: OnPrepareReply(const PaxosMsg & oPaxosMsg)
 
         // 3.21 : 下次再次运行 proposer 时，不需要再进行 prepare 阶段了。
         // 可能有人会问为什么要这样，因为在等待 accept 回复的过程中，
-        // 当前线程会扔进 loop 中，再次唤醒需要一个标志位判断。
+        // 当前线程会重新扔进 loop 中，再次唤醒需要一个标志位判断。
         m_bCanSkipPrepare = true;
         Accept();
     }
@@ -406,6 +406,7 @@ void Proposer :: OnPrepareReply(const PaxosMsg & oPaxosMsg)
 
 void Proposer :: OnExpiredPrepareReply(const PaxosMsg & oPaxosMsg)
 {
+    // 提升自己的 proposalID 值，这里是一个工程优化。
     if (oPaxosMsg.rejectbypromiseid() != 0)
     {
         PLGDebug("[Expired Prepare Reply Reject] RejectByPromiseID %lu", oPaxosMsg.rejectbypromiseid());

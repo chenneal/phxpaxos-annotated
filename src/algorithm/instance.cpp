@@ -546,6 +546,7 @@ int Instance :: OnReceivePaxosMsg(const PaxosMsg & oPaxosMsg, const bool bIsRetr
 
 int Instance :: ReceiveMsgForProposer(const PaxosMsg & oPaxosMsg)
 {
+    // follower 是没权限做 propose 的。
     if (m_poConfig->IsIMFollower())
     {
         PLGErr("I'm follower, skip this message");
@@ -570,6 +571,14 @@ int Instance :: ReceiveMsgForProposer(const PaxosMsg & oPaxosMsg)
             // 3.26 : 作者的意思是虽然节点收到了其余节点的消息，但是发现
             // 消息和本次并不是处在一个 instance 之中，这时如果还是 reject 消息
             // 就显得比较尴尬了，需要提升自己的 proposalID 才行，否则一直落后。
+            
+            // 3.28 : 上次没能完全理解，这里的优化其实非常精彩，
+            // 就是假如有个节点回传消息非常的慢，
+            // 上一轮我们已经获得了大多数的赞成所有结束了上一轮的投票，结束之后
+            // 那个慢一些的节点消息又过来了，这个时候如果消息是 reject ， 代表本节点的
+            // proposalID 已经落后了那个节点，那么如果不提升以后每次都会被那个节点 reject 。
+
+            // 疑问 : 我最大的疑问是为什么只处理落后一个 instance 的情况?
             if (oPaxosMsg.msgtype() == MsgType_PaxosPrepareReply)
             {
                 m_oProposer.OnExpiredPrepareReply(oPaxosMsg);
