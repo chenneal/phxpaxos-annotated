@@ -360,6 +360,7 @@ int PNode :: Propose(const int iGroupIdx, const std::string & sValue, uint64_t &
         return Paxos_GroupIdxWrong;
     }
 
+    // 这个 Propose 接口只是简单的调用了对应 GroupID 的 Committer 的 NewValueGetID 函数。
     return m_vecGroupList[iGroupIdx]->GetCommitter()->NewValueGetID(sValue, llInstanceID, poSMCtx);
 }
 

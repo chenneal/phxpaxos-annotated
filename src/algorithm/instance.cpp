@@ -425,7 +425,7 @@ void Instance :: OnReceive(const std::string & sBuffer)
         {
             return;
         }
-        
+        // 处理 paxos 消息。
         OnReceivePaxosMsg(oPaxosMsg);
     }
     else if (iCmd == MsgCmd_CheckpointMsg)
@@ -443,7 +443,8 @@ void Instance :: OnReceive(const std::string & sBuffer)
         {
             return;
         }
-        
+
+        // 处理 checkpoint 消息。
         OnReceiveCheckpointMsg(oCheckpointMsg);
     }
 }
@@ -480,6 +481,7 @@ int Instance :: OnReceivePaxosMsg(const PaxosMsg & oPaxosMsg, const bool bIsRetr
             m_oProposer.GetInstanceID(), oPaxosMsg.instanceid(), oPaxosMsg.msgtype(),
             oPaxosMsg.nodeid(), m_poConfig->GetMyNodeID(), m_oLearner.GetSeenLatestInstanceID());
 
+    // 这里的消息都由 proposer 去处理。
     if (oPaxosMsg.msgtype() == MsgType_PaxosPrepareReply
             || oPaxosMsg.msgtype() == MsgType_PaxosAcceptReply
             || oPaxosMsg.msgtype() == MsgType_PaxosProposal_SendNewValue)
@@ -490,9 +492,10 @@ int Instance :: OnReceivePaxosMsg(const PaxosMsg & oPaxosMsg, const bool bIsRetr
             PLGErr("acceptor reply type msg, from nodeid not in my membership, skip this message");
             return 0;
         }
-        
+        // proposer 处理的入口。
         return ReceiveMsgForProposer(oPaxosMsg);
     }
+    // 这里的消息都由 acceptor 去处理。
     else if (oPaxosMsg.msgtype() == MsgType_PaxosPrepare
             || oPaxosMsg.msgtype() == MsgType_PaxosAccept)
     {
@@ -514,8 +517,11 @@ int Instance :: OnReceivePaxosMsg(const PaxosMsg & oPaxosMsg, const bool bIsRetr
         }
 
         ChecksumLogic(oPaxosMsg);
+
+        // acceptor 处理的入口。
         return ReceiveMsgForAcceptor(oPaxosMsg, bIsRetry);
     }
+    // 这里的消息都由 learner 去处理。
     else if (oPaxosMsg.msgtype() == MsgType_PaxosLearner_AskforLearn
             || oPaxosMsg.msgtype() == MsgType_PaxosLearner_SendLearnValue
             || oPaxosMsg.msgtype() == MsgType_PaxosLearner_ProposerSendSuccess
@@ -525,6 +531,8 @@ int Instance :: OnReceivePaxosMsg(const PaxosMsg & oPaxosMsg, const bool bIsRetr
             || oPaxosMsg.msgtype() == MsgType_PaxosLearner_AskforCheckpoint)
     {
         ChecksumLogic(oPaxosMsg);
+
+        // learner 处理的入口。
         return ReceiveMsgForLearner(oPaxosMsg);
     }
     else

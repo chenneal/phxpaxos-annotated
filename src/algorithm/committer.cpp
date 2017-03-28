@@ -52,6 +52,7 @@ int Committer :: NewValueGetID(const std::string & sValue, uint64_t & llInstance
 {
     BP->GetCommiterBP()->NewValue();
 
+    // 最多可以尝试三次，作者似乎认为这里没必要使用宏。
     int iRetryCount = 3;
     int ret = PaxosTryCommitRet_OK;
     while(iRetryCount--)
@@ -59,6 +60,7 @@ int Committer :: NewValueGetID(const std::string & sValue, uint64_t & llInstance
         TimeStat oTimeStat;
         oTimeStat.Point();
 
+        // 每次 step 的动作接口。
         ret = NewValueGetIDNoRetry(sValue, llInstanceID, poSMCtx);
         if (ret != PaxosTryCommitRet_Conflict)
         {
@@ -93,6 +95,8 @@ int Committer :: NewValueGetIDNoRetry(const std::string & sValue, uint64_t & llI
     bool bHasLock = m_oWaitLock.Lock(m_iTimeoutMs, iLockUseTimeMs);
     if (!bHasLock)
     {
+        // 两种情况会拿不到锁，一种是拿锁的过程超时了，
+        // 还有一种是有太多的线程在等待锁。
         if (iLockUseTimeMs > 0)
         {
             BP->GetCommiterBP()->NewValueGetLockTimeout();
@@ -110,6 +114,7 @@ int Committer :: NewValueGetIDNoRetry(const std::string & sValue, uint64_t & llI
     int iLeftTimeoutMs = -1;
     if (m_iTimeoutMs > 0)
     {
+        // 计算剩下还有多少时间可以运行本次 commit 。
         iLeftTimeoutMs = m_iTimeoutMs > iLockUseTimeMs ? m_iTimeoutMs - iLockUseTimeMs : 0;
         if (iLeftTimeoutMs < 200)
         {
@@ -130,11 +135,15 @@ int Committer :: NewValueGetIDNoRetry(const std::string & sValue, uint64_t & llI
     int iSMID = poSMCtx != nullptr ? poSMCtx->m_iSMID : 0;
     
     string sPackSMIDValue = sValue;
+    // 消息需要合并一个 iSMID 作为状态机的辨识，方便以后状态机的执行。
     m_poSMFac->PackPaxosValue(sPackSMIDValue, iSMID);
 
+    // 初始化 commit 类。 
     m_poCommitCtx->NewCommit(&sPackSMIDValue, poSMCtx, iLeftTimeoutMs);
+    // 唤醒消费者。
     m_poIOLoop->AddNotify();
 
+    // 等待最后的结果，等待过程中会休眠。
     int ret = m_poCommitCtx->GetResult(llInstanceID);
 
     m_oWaitLock.UnLock();
@@ -163,6 +172,7 @@ void Committer :: SetProposeWaitTimeThresholdMS(const int iWaitTimeThresholdMS)
 void Committer :: LogStatus()
 {
     uint64_t llNowTime = Time::GetSteadyClockMS();
+    // 超过 1s 才做一次 log ，防止写盘次数过多。
     if (llNowTime > m_llLastLogTime
             && llNowTime - m_llLastLogTime > 1000)
     {
