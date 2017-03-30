@@ -319,7 +319,8 @@ void Instance :: CheckNewValue()
     {
         m_oIOLoop.AddTimer(m_oCommitCtx.GetTimeoutMs(), Timer_Instance_Commit_Timeout, m_iCommitTimerID);
     }
-    
+
+	// ¸üĞÂÉÏÒ»´ÎÍ³¼ÆÊ±¼äµÄÖµ¡£
     m_oTimeStat.Point();
 
     if (m_poConfig->GetIsUseMembership()
@@ -519,6 +520,7 @@ int Instance :: OnReceivePaxosMsg(const PaxosMsg & oPaxosMsg, const bool bIsRetr
         ChecksumLogic(oPaxosMsg);
 
         // acceptor ´¦ÀíµÄÈë¿Ú¡£
+        // 3.29 : ÕâÀïÎÒÃÇ·¢ÏÖÁËÖ»ÓĞ acceptor µÄÏûÏ¢¿ÉÄÜĞèÒª retry ¡£
         return ReceiveMsgForAcceptor(oPaxosMsg, bIsRetry);
     }
     // ÕâÀïµÄÏûÏ¢¶¼ÓÉ learner È¥´¦Àí¡£
@@ -621,8 +623,9 @@ int Instance :: ReceiveMsgForAcceptor(const PaxosMsg & oPaxosMsg, const bool bIs
         BP->GetInstanceBP()->OnReceivePaxosAcceptorMsgInotsame();
     }
 
-    // ÕâÀï×öÁËÒ»¸öÓÅ»¯£¬µ±ÊÕµ½´óÓÚµ±Ç° instanceID µÄÏûÏ¢Ê±£¬´ú±í
-    // ÉÏÒ»ÂÖµÄ instance ÒÑ¾­½áÊø£¬Ö±½ÓÑ§Ï°ÉÏÒ»´Î instance µÄÖµ¡£
+    // ÕâÀï×öÁËÒ»¸öÓÅ»¯£¬µ±ÊÕµ½ÏÂÒ»ÂÖ instanceID µÄÏûÏ¢Ê±£¬´ú±í
+    // ±¾ÂÖµÄ instance ÒÑ¾­½áÊø£¬Ö±½ÓÑ§Ï°ÉÏÒ»´Î instance µÄÖµ¡
+    // ÕâÀï½«+1 µÄ instance ×÷ÎªÌØÊâ´¦ÀíµÄÀíÓÉÊÇ
     if (oPaxosMsg.instanceid() == m_oAcceptor.GetInstanceID() + 1)
     {
         //skip success message

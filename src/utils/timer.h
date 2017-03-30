@@ -51,6 +51,7 @@ private:
         uint64_t m_llAbsTime;
         int m_iType;
 
+        // 重载小于号，方便建小顶堆。
         bool operator < (const TimerObj & obj) const
         {
             if (obj.m_llAbsTime == m_llAbsTime)

@@ -113,6 +113,7 @@ public:
 
     bool peek(T& t, int timeoutMS) {
         while (empty()) {
+			// 这里做了个超时判断，等待的时间不能超过即将超时的时间。
             if (_cond.wait_for(_lock, std::chrono::milliseconds(timeoutMS)) == std::cv_status::timeout) {
                 return false;
             }

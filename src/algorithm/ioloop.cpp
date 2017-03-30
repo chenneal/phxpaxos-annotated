@@ -55,6 +55,8 @@ void IOLoop :: run()
 
         //PLGHead("nexttimeout %d", iNextTimeout);
 
+        // 3.29 : 这个传入的参数代表还没超时的那个事件
+        //          还剩下的超时时间。
         OneLoop(iNextTimeout);
 
         if (m_bIsEnd)
@@ -168,6 +170,9 @@ void IOLoop :: DealWithRetry()
             BP->GetIOLoopBP()->DealWithRetryMsg();
             PLGDebug("retry msg. instanceid %lu", oPaxosMsg.instanceid());
             m_poInstance->OnReceivePaxosMsg(oPaxosMsg);
+
+            // 3.29 : 这里需要先处理完当前 instanceID 的实例再处理下一个，所以这里
+            // 这里使用了一个标志位作为判断。
             bHaveRetryOne = true;
         }
 
@@ -181,6 +186,11 @@ void IOLoop :: OneLoop(const int iTimeoutMs)
 
     // 保护队列防止过程中被外部修改。
     m_oMessageQueue.lock();
+	// 超时时间只用来处理超时事件，
+	// 加入开始处理消息后定时器立即作废。
+	// 3.29 : 非常奇怪的是我不明白超时器每次都取出
+	// 最快过期的事件，但是和拿出来的 message 并不是一一对应的。
+	// 这样难道不是不合理吗?
     bool bSucc = m_oMessageQueue.peek(psMessage, iTimeoutMs);
     
     if (!bSucc)
@@ -255,6 +265,7 @@ void IOLoop :: DealwithTimeoutOne(const uint32_t iTimerID, const int iType)
     m_poInstance->OnTimeout(iTimerID, iType);
 }
 
+// 处理所有已经超时的事件。
 void IOLoop :: DealwithTimeout(int & iNextTimeout)
 {
     bool bHasTimeout = true;

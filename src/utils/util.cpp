@@ -194,6 +194,7 @@ TimeStat :: TimeStat()
     m_llTime = Time::GetSteadyClockMS();
 }
 
+// 这个函数调用了好多次，意思是统计两次调用这个函数的时间差。
 int TimeStat :: Point()
 {
     uint64_t llNowTime = Time::GetSteadyClockMS();

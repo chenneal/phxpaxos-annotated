@@ -48,6 +48,8 @@ void Timer :: AddTimerWithType(const uint64_t llAbsTime, const int iType, uint32
     push_heap(begin(m_vecTimerHeap), end(m_vecTimerHeap));
 }
 
+// 返回 0 代表已经超时，返回正数代表最快超时的那个事件
+// 还剩下的没有超时的时间。
 const int Timer :: GetNextTimeout() const
 {
     if (m_vecTimerHeap.empty())
@@ -67,6 +69,7 @@ const int Timer :: GetNextTimeout() const
     return iNextTimeout;
 }
 
+// 取出最老的那个超时的节点。
 bool Timer :: PopTimeout(uint32_t & iTimerID, int & iType)
 {
     if (m_vecTimerHeap.empty())
