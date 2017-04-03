@@ -258,8 +258,7 @@ int Acceptor :: OnPrepare(const PaxosMsg & oPaxosMsg)
         // 更新 promise proposeid 的值。
         m_oAcceptorState.SetPromiseBallot(oBallot);
 
-       // 这里看不太懂，记住已经 promise 的最大值我是懂的，但是这似乎和
-       // accept 的时候固化方式一模一样，难道不需要区分一下吗?
+        // 记住已经 promise 的最大值。
         int ret = m_oAcceptorState.Persist(GetInstanceID(), GetLastChecksum());
         if (ret != 0)
         {
@@ -279,7 +278,8 @@ int Acceptor :: OnPrepare(const PaxosMsg & oPaxosMsg)
         PLGDebug("[Reject] State.PromiseID %lu State.PromiseNodeID %lu", 
                 m_oAcceptorState.GetPromiseBallot().m_llProposalID, 
                 m_oAcceptorState.GetPromiseBallot().m_llNodeID);
-        
+
+	// 提供 promise 值用来做参考来提升自己的 proposalID 值。
         oReplyPaxosMsg.set_rejectbypromiseid(m_oAcceptorState.GetPromiseBallot().m_llProposalID);
     }
 
@@ -323,9 +323,10 @@ void Acceptor :: OnAccept(const PaxosMsg & oPaxosMsg)
         m_oAcceptorState.SetAcceptedBallot(oBallot);
         m_oAcceptorState.SetAcceptedValue(oPaxosMsg.value());
 
-	// 固化到磁盘记录最大的已经 accept 的值。和上面一样抱有同样的疑问
-	// 不过似乎通过 state 的各个字段是可以判断哪个是 accept ，哪个是 promise
-	// 的值，但是这样未免太麻烦，虽然说 accept 的情况很少。
+	// 记住已经 promise 的最大值。
+	// 04-01 : 这里并不是真正的写入 log 的动作，只是需要将状态写入
+	// 磁盘之中，这是 paxos 本身所要求的事情。而且在这里 value 的值
+	// 并没有被 chosen 。
         int ret = m_oAcceptorState.Persist(GetInstanceID(), GetLastChecksum());
         if (ret != 0)
         {

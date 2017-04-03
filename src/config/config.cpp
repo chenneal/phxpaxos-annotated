@@ -223,7 +223,9 @@ const std::map<nodeid_t, uint64_t> & Config :: GetTmpNodeMap()
 
 void Config :: AddFollowerNode(const nodeid_t iMyFollowerNodeID)
 {
+    // 这里 * 3 没搞懂是用来做什么的?
     static int iFollowerTimeout = ASKFORLEARN_NOOP_INTERVAL * 3;
+   // 一种映射 flowerID 和 timeout 关系的 map 。
     m_mapMyFollower[iMyFollowerNodeID] = Time::GetSteadyClockMS() + iFollowerTimeout;
 }
 

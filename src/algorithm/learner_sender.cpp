@@ -75,6 +75,7 @@ void LearnerSender :: ReleshSending()
     m_llAbsLastSendTime = Time::GetSteadyClockMS();
 }
 
+// 判断是否在发送中，没有发送或者已经超时均算为未发送状态。
 const bool LearnerSender :: IsIMSending()
 {
     if (!m_bIsIMSending)
@@ -149,6 +150,10 @@ const bool LearnerSender :: CheckAck(const uint64_t llSendInstanceID)
 
 //////////////////////////////////////////////////////////////////////////
 
+// 发送的准备工作，主要是判断是否是在发送途中以及是否被确认。
+// 已经被确认或者还在发送途中的返回 false 。
+// 04-03 : 这个函数非常重要，它设定了 learner 需要传送的 instance 的起点，
+// 然后 learner 的 sender 线程会根据这个值流式的快速发给这个需要学习的节点。
 const bool LearnerSender :: Prepare(const uint64_t llBeginInstanceID, const nodeid_t iSendToNodeID)
 {
     m_oLock.Lock();
@@ -216,8 +221,11 @@ void LearnerSender :: Ack(const uint64_t llAckInstanceID, const nodeid_t iFromNo
 void LearnerSender :: WaitToSend()
 {
     m_oLock.Lock();
+    // 所谓的确认就是要等待对方知道自己的 chosen 信息之后已经确定要从自己
+    // 的节点去学习，这样才能发送自己的数据到那个已经确认过的节点。
     while (!m_bIsComfirmed)
     {
+        // 最长等待 1000ms 。
         m_oLock.WaitTime(1000);
         if (m_bIsEnd)
         {

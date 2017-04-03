@@ -144,6 +144,7 @@ const int InsideOptions :: GetMaxQueueLen()
 
 const int InsideOptions :: GetAskforLearnInterval()
 {
+    // 如果自己不是 follower 那么可以发送给 learn 请求节点更长时间的数据。
     if (!m_bIsIMFollower)
     {
         if (m_bIsLargeBufferMode)

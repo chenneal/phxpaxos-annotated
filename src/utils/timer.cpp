@@ -45,6 +45,7 @@ void Timer :: AddTimerWithType(const uint64_t llAbsTime, const int iType, uint32
 
     TimerObj tObj(iTimerID, llAbsTime, iType);
     m_vecTimerHeap.push_back(tObj);
+    // 调整小顶堆。
     push_heap(begin(m_vecTimerHeap), end(m_vecTimerHeap));
 }
 
@@ -69,7 +70,7 @@ const int Timer :: GetNextTimeout() const
     return iNextTimeout;
 }
 
-// 取出最老的那个超时的节点。
+// 取出最小的那个超时的节点。
 bool Timer :: PopTimeout(uint32_t & iTimerID, int & iType)
 {
     if (m_vecTimerHeap.empty())

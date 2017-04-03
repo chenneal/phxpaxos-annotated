@@ -186,11 +186,11 @@ void IOLoop :: OneLoop(const int iTimeoutMs)
 
     // 保护队列防止过程中被外部修改。
     m_oMessageQueue.lock();
-	// 超时时间只用来处理超时事件，
-	// 加入开始处理消息后定时器立即作废。
-	// 3.29 : 非常奇怪的是我不明白超时器每次都取出
-	// 最快过期的事件，但是和拿出来的 message 并不是一一对应的。
-	// 这样难道不是不合理吗?
+    // 超时时间只用来处理超时事件，
+    // 加入开始处理消息后定时器立即作废。
+    // 3.29 : 非常奇怪的是我不明白超时器每次都取出
+    // 最快过期的事件，但是和拿出来的 message 并不是一一对应的。
+    // 这样难道不是不合理吗?
     bool bSucc = m_oMessageQueue.peek(psMessage, iTimeoutMs);
     
     if (!bSucc)

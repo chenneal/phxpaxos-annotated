@@ -196,6 +196,7 @@ const uint64_t Learner :: GetSeenLatestInstanceID()
     return m_llHighestSeenInstanceID;
 }
 
+// 这个函数设置本节点的 instance 看到其余节点请求 learn 的 instance 的最大值。
 void Learner :: SetSeenInstanceID(const uint64_t llInstanceID, const nodeid_t llFromNodeID)
 {
     if (llInstanceID > m_llHighestSeenInstanceID)
@@ -259,7 +260,7 @@ void Learner :: AskforLearn()
     BroadcastMessageToTempNode(oPaxosMsg, Message_SendType_UDP);
 }
 
-void Learner :: OnAskforLearn(const PaxosMsg & oPaxosMsg)
+void Learner ::   OnAskforLearn(const PaxosMsg & oPaxosMsg)
 {
     BP->GetLearnerBP()->OnAskforLearn();
     
@@ -269,6 +270,8 @@ void Learner :: OnAskforLearn(const PaxosMsg & oPaxosMsg)
     
     SetSeenInstanceID(oPaxosMsg.instanceid(), oPaxosMsg.nodeid());
 
+    // 下面这张情况是指我的 follower 节点发来了 learn 的请求。
+    // 加入自己的 follow node 列表。
     if (oPaxosMsg.proposalnodeid() == m_poConfig->GetMyNodeID())
     {
         //Found a node follow me.
@@ -278,6 +281,7 @@ void Learner :: OnAskforLearn(const PaxosMsg & oPaxosMsg)
     
     if (oPaxosMsg.instanceid() >= GetInstanceID())
     {
+        // 我自己已经落后了，忽略消息。
         return;
     }
 
@@ -289,6 +293,8 @@ void Learner :: OnAskforLearn(const PaxosMsg & oPaxosMsg)
 
             PLGErr("LearnerSender working for others.");
 
+            // 这是一个优化，当只差一个 instance 时，可以直接 learn ，
+            // 即使没有通过 prepare 也可以这么做。
             if (oPaxosMsg.instanceid() == (GetInstanceID() - 1))
             {
                 PLGImp("InstanceID only difference one, just send this value to other.");
@@ -344,6 +350,7 @@ void Learner :: SendNowInstanceID(const uint64_t llInstanceID, const nodeid_t iS
     SendMessage(iSendNodeID, oPaxosMsg);
 }
 
+// 获知了对方正在运行的 instanceID，
 void Learner :: OnSendNowInstanceID(const PaxosMsg & oPaxosMsg)
 {
     BP->GetLearnerBP()->OnSendNowInstanceID();
@@ -352,6 +359,7 @@ void Learner :: OnSendNowInstanceID(const PaxosMsg & oPaxosMsg)
             oPaxosMsg.instanceid(), GetInstanceID(), oPaxosMsg.nodeid(), oPaxosMsg.nowinstanceid(), 
             oPaxosMsg.systemvariables().size(), oPaxosMsg.mastervariables().size());
 
+    // 更新已经知晓的对方最大的 instanceID 。
     SetSeenInstanceID(oPaxosMsg.nowinstanceid(), oPaxosMsg.nodeid());
 
     bool bSystemVariablesChange = false;
@@ -512,6 +520,7 @@ void Learner :: SendLearnValue_Ack(const nodeid_t iSendNodeID)
 {
     PLGHead("START LastAck.Instanceid %lu Now.Instanceid %lu", m_llLastAckInstanceID, GetInstanceID());
 
+    // 每隔 LearnerReceiver_ACK_LEAD 才发送一个回复。
     if (GetInstanceID() < m_llLastAckInstanceID + LearnerReceiver_ACK_LEAD)
     {
         PLGImp("No need to ack");
@@ -652,10 +661,13 @@ void Learner :: AskforCheckpoint(const nodeid_t iSendNodeID)
     oPaxosMsg.set_msgtype(MsgType_PaxosLearner_AskforCheckpoint);
 
     PLGHead("END InstanceID %lu MyNodeID %lu", GetInstanceID(), oPaxosMsg.nodeid());
-    
+
+    // 这个消息似乎不需要扔进定时器之中，应该是不管有没有超时，都需要处理的样子。
+    // 但是这样难道不会和 timer 对应不起来吗? 还是我一开始就弄错了。
     SendMessage(iSendNodeID, oPaxosMsg);
 }
 
+// 3.31 : 不太理解为什么需要重新 new 出一个 sender 。
 void Learner :: OnAskforCheckpoint(const PaxosMsg & oPaxosMsg)
 {
     CheckpointSender * poCheckpointSender = GetNewCheckpointSender(oPaxosMsg.nodeid());

@@ -281,16 +281,19 @@ Replayer * Instance :: GetCheckpointReplayer()
 
 void Instance :: CheckNewValue()
 {
+    // ÅÐ¶ÏÉÏÒ»¸ö commit ÊÇ·ñÒÑ¾­½áÊø¡£
     if (!m_oCommitCtx.IsNewCommit())
     {
         return;
     }
 
+    // ÅÐ¶Ïµ±Ç°µÄ instance ÊÇ·ñÊÇ×îÐÂµÄ£¬Èç¹û²»ÊÇ£¬»¹ÐèÒª²¹Æë¡£
     if (!m_oLearner.IsIMLatest())
     {
         return;
     }
 
+    // follower ½ÚµãÊÇ²»ÄÜ¹»ÌáÒéÒ»¸öÖµµÄ£¬µ¥´¿µÄÑ§Ï°¼´¿É¡£
     if (m_poConfig->IsIMFollower())
     {
         PLGErr("I'm follower, skip this new value");
@@ -320,7 +323,7 @@ void Instance :: CheckNewValue()
         m_oIOLoop.AddTimer(m_oCommitCtx.GetTimeoutMs(), Timer_Instance_Commit_Timeout, m_iCommitTimerID);
     }
 
-	// ¸üÐÂÉÏÒ»´ÎÍ³¼ÆÊ±¼äµÄÖµ¡£
+    // ¸üÐÂÉÏÒ»´ÎÍ³¼ÆÊ±¼äµÄÖµ¡£
     m_oTimeStat.Point();
 
     if (m_poConfig->GetIsUseMembership()
@@ -624,8 +627,7 @@ int Instance :: ReceiveMsgForAcceptor(const PaxosMsg & oPaxosMsg, const bool bIs
     }
 
     // ÕâÀï×öÁËÒ»¸öÓÅ»¯£¬µ±ÊÕµ½ÏÂÒ»ÂÖ instanceID µÄÏûÏ¢Ê±£¬´ú±í
-    // ±¾ÂÖµÄ instance ÒÑ¾­½áÊø£¬Ö±½ÓÑ§Ï°ÉÏÒ»´Î instance µÄÖµ¡
-    // ÕâÀï½«+1 µÄ instance ×÷ÎªÌØÊâ´¦ÀíµÄÀíÓÉÊÇ
+    // ±¾ÂÖµÄ instance ÒÑ¾­½áÊø£¬Ö±½ÓÑ§Ï°ÉÏÒ»´Î instance µÄÖµ¡£
     if (oPaxosMsg.instanceid() == m_oAcceptor.GetInstanceID() + 1)
     {
         //skip success message
@@ -709,6 +711,10 @@ int Instance :: ReceiveMsgForLearner(const PaxosMsg & oPaxosMsg)
         m_oLearner.OnAskforCheckpoint(oPaxosMsg);
     }
 
+    // 04.02 : ÕâÀïÎÒ»¨ÁËºÃ¾Ã²ÅÀí½â£¬Õâ¸öµØ·½±ÈÈçÃ¿´ÎÊÕµ½Ò»¸ö accept ´ó¶àÊýµÄÈ·ÈÏ£¬¶¼»áÊÕµ½
+    // MsgType_PaxosLearner_ProposerSendSuccess £¬¾Í»áµ÷ÓÃ LearnValueWithoutWrite £¬Õâ¸ö½Ó¿Ú
+    // »áÖÃ m_IsLearned Îª true ¡£
+    // ËÆºõ learner µÄ½ø¶ÈÊÇ²»ÐèÒªºÍÆäËüÁ½¸ö½ÇÉ«±£³ÖÒ»ÖÂµÄ¡£
     if (m_oLearner.IsLearned())
     {
         BP->GetInstanceBP()->OnInstanceLearned();

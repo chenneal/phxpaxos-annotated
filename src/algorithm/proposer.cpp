@@ -264,6 +264,7 @@ void Proposer :: AddAcceptTimer(const int iTimeoutMs)
 {
     if (m_iAcceptTimerID > 0)
     {
+        // 去掉老的 timer 。
         m_poIOLoop->RemoveTimer(m_iAcceptTimerID);
     }
 
@@ -499,6 +500,9 @@ void Proposer :: OnAcceptReply(const PaxosMsg & oPaxosMsg)
     {
         BP->GetProposerBP()->AcceptNotPass();
         PLGImp("[Not pass] wait 30ms and Restart prepare");
+        
+        // 设定一个定时器，留做下次 loop 的时候去处理。
+        // 可以预见，肯定是重新从 prepare 开始的。
         AddAcceptTimer(OtherUtils::FastRand() % 30 + 10);
     }
 

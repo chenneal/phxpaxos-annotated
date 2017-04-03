@@ -224,6 +224,7 @@ void SystemVSM :: AddNodeIDList(const NodeInfoList & vecNodeInfoList)
     RefleshNodeID();
 }
 
+// 通过变更系统变量的值来重新更新节点的信息。
 void SystemVSM :: RefleshNodeID()
 {
     m_setNodeID.clear();
@@ -317,6 +318,7 @@ int SystemVSM :: UpdateByCheckpoint(const std::string & sCPBuffer, bool & bChang
         return -2;
     }
 
+    // GroupID 不同，说明发生了错误。
     if (m_oSystemVariables.gid() != 0 
             && oVariables.gid() != m_oSystemVariables.gid())
     {
@@ -324,6 +326,7 @@ int SystemVSM :: UpdateByCheckpoint(const std::string & sCPBuffer, bool & bChang
         return -2;
     }
 
+    // 如果要更新系统的变量信息，版本必须要是最新的。
     if (m_oSystemVariables.version() != (uint64_t)-1 
             && oVariables.version() <= m_oSystemVariables.version())
     {
