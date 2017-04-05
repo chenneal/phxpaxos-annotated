@@ -153,9 +153,12 @@ int Cleaner :: FixMinChosenInstanceID(const uint64_t llOldMinChosenInstanceID)
     uint64_t llFixMinChosenInstanceID = llOldMinChosenInstanceID;
     int ret = 0;
 
+    // 这个 DELETE_SAVE_INTERVAL 表示的应该是一个安全的范围，从 min 向上这个阈值的范围内
+    // 的 value 可以存在一定的删除现象并且可以通过这个接口修复。
     for (uint64_t llInstanceID = llOldMinChosenInstanceID; llInstanceID < llOldMinChosenInstanceID + DELETE_SAVE_INTERVAL;
            llInstanceID++)    
     {
+        // 不能大于 checkpoint 的 instanceID 值。
         if (llInstanceID >= llCPInstanceID)
         {
             break;
@@ -167,6 +170,7 @@ int Cleaner :: FixMinChosenInstanceID(const uint64_t llOldMinChosenInstanceID)
         {
             return -1;
         }
+	// 如果不存在，代表本应该存在的值却失效了，修复即可。
         else if (ret == 1)
         {
             llFixMinChosenInstanceID = llInstanceID + 1;

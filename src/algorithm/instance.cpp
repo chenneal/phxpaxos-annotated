@@ -628,6 +628,8 @@ int Instance :: ReceiveMsgForAcceptor(const PaxosMsg & oPaxosMsg, const bool bIs
 
     // 这里做了一个优化，当收到下一轮 instanceID 的消息时，代表
     // 本轮的 instance 已经结束，直接学习上一次 instance 的值。
+    // 04-04 : 要注意的是这个值并不是一定能够被 chosen 的，因为本节点的
+    // accept 的值可能并不是最终确认的值，可以通过 proposalID 判断。
     if (oPaxosMsg.instanceid() == m_oAcceptor.GetInstanceID() + 1)
     {
         //skip success message

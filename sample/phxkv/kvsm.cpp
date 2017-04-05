@@ -69,6 +69,8 @@ const bool PhxKVSM :: Init()
     return true;
 }
 
+// 更新 checkpoint instanceID 的值，为了防止更新太频繁而导致写盘次数过多，
+// 每隔一定的长度才会去记录一次 checkpoint 。
 int PhxKVSM :: SyncCheckpointInstanceID(const uint64_t llInstanceID)
 {
     if (m_iSkipSyncCheckpointTimes++ < 5)

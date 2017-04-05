@@ -392,6 +392,8 @@ void Learner :: OnSendNowInstanceID(const PaxosMsg & oPaxosMsg)
         return;
     }
 
+    // 04-04 : 表示连对方最小的 instanceID 都已经看不到了，只能借助于 checkpoint 传输。
+    // checkpoint 操作非常的重，小心使用。
     if (oPaxosMsg.minchoseninstanceid() > GetInstanceID())
     {
         BP->GetCheckpointBP()->NeedAskforCheckpoint();
@@ -581,7 +583,8 @@ void Learner :: ProposerSendSuccess(
     BP->GetLearnerBP()->ProposerSendSuccess();
 
     PaxosMsg oPaxosMsg;
-    
+
+    // 对方的 learner 收到这个类型的消息会去学习已经被 accept 的值。
     oPaxosMsg.set_msgtype(MsgType_PaxosLearner_ProposerSendSuccess);
     oPaxosMsg.set_instanceid(llLearnInstanceID);
     oPaxosMsg.set_nodeid(m_poConfig->GetMyNodeID());
@@ -589,6 +592,7 @@ void Learner :: ProposerSendSuccess(
     oPaxosMsg.set_lastchecksum(GetLastChecksum());
 
     //run self first
+    // 广播这个消息。
     BroadcastMessage(oPaxosMsg, BroadcastMessage_Type_RunSelf_First);
 }
 
@@ -603,6 +607,7 @@ void Learner :: OnProposerSendSuccess(const PaxosMsg & oPaxosMsg)
             m_poAcceptor->GetAcceptorState()->GetAcceptedBallot().m_llNodeID, 
             oPaxosMsg.nodeid());
 
+    // 到这个函数了，说明必须要和自己处于同一个 instance 之内才行。
     if (oPaxosMsg.instanceid() != GetInstanceID())
     {
         //Instance id not same, that means not in the same instance, ignord.
@@ -639,6 +644,7 @@ void Learner :: OnProposerSendSuccess(const PaxosMsg & oPaxosMsg)
 
     PLGHead("END Learn value OK, value %zu", m_poAcceptor->GetAcceptorState()->GetAcceptedValue().size());
 
+    // 发送给自己 followers 。
     TransmitToFollower();
 }
 

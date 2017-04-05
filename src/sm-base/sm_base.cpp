@@ -244,6 +244,9 @@ void SMFac :: AddSM(StateMachine * poSM)
 
 ///////////////////////////////////////////////////////
 
+// 获得 checkponit 对应的 instanceID ，这里我们可以看出这里使用的办法是
+// 遍历所有的状态机，取出所有状态机最大的那个 checkpoint instanceID 最为
+// 最终的结果，即最大原则，原因细想一下即可。
 const uint64_t SMFac :: GetCheckpointInstanceID(const int iGroupIdx) const
 {
     uint64_t llCPInstanceID = -1;
@@ -252,6 +255,7 @@ const uint64_t SMFac :: GetCheckpointInstanceID(const int iGroupIdx) const
 
     for (auto & poSM : m_vecSMList)
     {
+        // 这里是个抽象函数，返回 checkpoint 对应的 instanceID 。
         uint64_t llCheckpointInstanceID = poSM->GetCheckpointInstanceID(iGroupIdx);
         if (poSM->SMID() == SYSTEM_V_SMID
                 || poSM->SMID() == MASTER_V_SMID)

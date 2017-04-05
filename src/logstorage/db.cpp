@@ -558,6 +558,7 @@ int Database :: GetMinChosenInstanceID(uint64_t & llMinInstanceID)
     return 0;
 }
 
+// 记录最小的已经被 chosen 的值。
 int Database :: SetMinChosenInstanceID(const WriteOptions & oWriteOptions, const uint64_t llMinInstanceID)
 {
     if (!m_bHasInit)
