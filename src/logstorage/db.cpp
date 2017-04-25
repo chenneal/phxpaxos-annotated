@@ -368,6 +368,9 @@ int Database :: Put(const WriteOptions & oWriteOptions, const uint64_t llInstanc
         return ret;
     }
     // 有点迷糊，为啥还要写一遍到 levelDB里呢?
+    //04-23 : 已经搞清楚，这里的levelDB其实只存索引，充分利用levelDB的写优势。
+    // 这样写索引会非常快速，读真实的值由于通过索引查找也会非常快速，而且真实
+    // 的值存储是顺序存储，按照InstanceID的顺序，删除会非常方便。
     ret = PutToLevelDB(false, llInstanceID, sFileID);
     
     return ret;
